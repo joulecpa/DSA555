@@ -20,13 +20,9 @@ class RecentList{
 	//The front node
 	Node<T>* front;
   Node<T>* end;
-	int listSize = 0;
+	int listSize;
 
 	public:
-
-    int gls(){
-       return listSize;
-    }
 
     RecentList();
     
@@ -65,6 +61,11 @@ template <class T>
 RecentList<T>& RecentList<T>::operator=(const RecentList<T>& source){
 
   if (this != &source){ 
+
+    //Set listSize as it isn't yet for uninitalized objects
+    //ie RecentList<T> list = otherlist
+    //list isn't initialized so listSize will be a random number
+    listSize = 0;
 
     //Clean up the current list if it exists
     if (front && listSize > 0){
