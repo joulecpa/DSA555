@@ -19,185 +19,262 @@ class RecentList{
 
 	//The front node
 	Node<T>* front;
-	int listSize;
+  Node<T>* end;
+	int listSize = 0;
 
 	public:
 
-		//No argument constructor, sets the object to a safe state
-		RecentList(){
+    int gls(){
+       return listSize;
+    }
 
-			front = nullptr;
-			listSize = 0;
-		}
+    RecentList();
+    
+    RecentList(const RecentList&);
+    RecentList& operator=(const RecentList&);
+
+    void insert(const T&);
+    void remove(const T&, bool (*isSame)(const T&, const T&));
+    Node<T>* search(const T& key, bool (*isSame)(const T&, const T&));
+    bool copyToArray(T array[],int capacity);
+
+    ~RecentList();
+    
+};
+
+//No argument constructor, sets the object to a safe state
+template <class T>
+RecentList<T>::RecentList(){
+
+	front = nullptr;
+  end = nullptr;
+	listSize = 0;
+}
 
 		
-		//Copy constructor
-		RecentList(const RecentList& rList){
-			
-			*this = rList;
-		}
+//Copy constructor, reuses Assignment operator
+template <class T>
+RecentList<T>::RecentList(const RecentList& rList){
+		 
+  *this = rList;
 
-		//Assignment operator overload
-		RecentList& operator=(const RecentList& source){
-	
-			
-			if (this != &source){
-				//Delete the current RecentList and deallocate with Destructor
-				~RecentList();		
-			
-				//Make a node to traverse through the source list
-				Node<T>* copyNode = source->front;
+}
 
-				while (copyNode){
-			
-					insert(copyNode->data);
-					copyNode = copyNode->next;	
-				}
-			}
+//Assignment operator overload
+template <class T>
+RecentList<T>& RecentList<T>::operator=(const RecentList<T>& source){
 
-			return *this;
-		}
+  if (this != &source){ 
 
-		//Inserts a node at the front of the list
-		void insert(const T& data_){
+    //Clean up the current list if it exists
+    if (front && listSize > 0){
 
-			//Check if there are any nodes to begin with
-			if (front){
-				//Create a new Node and make its next pointer point to the current front node
-				Node<T>* n = new Node<T>(data_, front);
+       this->~RecentList();
+    }
+    else{
+      if (front)
+        front = nullptr;
+    }
+
+    Node<T> * n = source.end;
+
+    while (n){
+      this->insert(n->data);
+      n = n->prev;
+    }
+
+  }
+
+  return *this;
+}
+
+//Inserts a node at the front of the list
+template <class T>		
+void RecentList<T>::insert(const T& data_){
+
+	//Check if there are any nodes to begin with
+	if (front){
+		//Create a new Node and make its next pointer point to the current front node
+		Node<T>* n = new Node<T>(data_, front);
 		
 
-				//Then set the current front's prev pointer point to the new node
-				front->prev = n;
+		//Then set the current front's prev pointer point to the new node
+		front->prev = n;
 
-				//Now the new node is the front node
-				front = n;
+		//Now the new node is the front node
+		front = n;
 
+	}
+	else{
+		front = new Node<T>(data_);
+    end = front;
+  }
+		
+	listSize++;
+
+}
+
+//Removes the first node where data matches the key if such data exists
+template <class T>
+void RecentList<T>::remove(const T& key, bool (*isSame)(const T&, const T&)){
+
+  //Check if there is a list at all first otherwise do nothing
+  if (front != nullptr){
+			
+		//Create a temporary node to traverse through the linked list
+		Node<T>* currentNode = front;
+		bool check = false; //flag for isSame
+
+		//Look for the node that where the key matches the node's data
+		//keep traversing through the list until end of list
+		do {
+
+      if (isSame(key, currentNode->data)){
+				check = true;
 			}
 			else
-				front = new Node<T>(data_);
-			
-			listSize++;
-		}
+				currentNode = currentNode->next;
 
-		//Removes the first node where data matches the key if such data exists
-		void remove(const T& key, bool (*isSame)(const T&, const T&)){
+		}	
+    while (currentNode && !check);
 
-			//Check if there is a list at all first otherwise do nothing
-			if (front != nullptr){
-			
-				//Create a temporary node to traverse through the linked list
-				Node<T>* currentNode = front;
-				bool check = false; //flag for isSame
-
-				//Look for the node that where the key matches the node's data
-				//keep traversing through the list until end of list
-				do {
-
-      		if (isSame(key, currentNode->data)){
-						check = true;
-					}
-					else
-						currentNode = currentNode->next;
-
-				}
-				while (currentNode->next && !check);
-
-				//We find a match
-				if (check){
+		  //We find a match
+			if (check){
 					
-					//Detach the previous node and the next node from the currentNode
-					//and attach them to each other
-					currentNode->prev->next = currentNode->next;
-					currentNode->next->prov = currentNode->prev;
-					
-					//Finally remove the currentNode
-					delete currentNode;
-					listSize--;
-				}
+			  //Detach the previous node and the next node from the currentNode
+			  //and attach them to each other
 
+        //Set up the next and prev nodes relative to the currentNode
+        Node<T>* pnode = currentNode->prev;
+        Node<T>* nnode = currentNode->next;
+
+        //Check if the node is the first node, if it is just make the next node the front
+        if (currentNode != front){
+
+				  //Corner case if the node found is the last node in the list
+          if (!nnode && pnode){
+            pnode->next = nnode;
+          }
+
+          //'Normal' case where the currentNode is between two other nodes
+          if (nnode && pnode){
+            pnode->next = nnode;
+            nnode->prev = pnode;
+          }			
+        
+        }
+        else{
+          front = nnode;
+        }
+
+				//Finally remove the currentNode
+				delete currentNode;
+				listSize--;
 			}
 
-			
+	}
 
-		}
+  if (!front)
+    end = nullptr;
 
-		//Searches the list for a node with data that matches the key and puts it in the
-		//front of the list
-		Node<T>* search(const T& key, bool (*isSame)(const T&, const T&)){
+}
 
-			Node<T>* currentNode;
+//Searches the list for a node with data that matches the key and puts it in the
+//front of the list and returns that node.
+template <class T>
+Node<T>* RecentList<T>::search(const T& key, bool (*isSame)(const T&, const T&)){
 
-			//Check if there is a list at all to begin with
-			if (front != nullptr){
+	Node<T>* currentNode;
+
+	//Check if there is a list at all to begin with
+	if (front != nullptr){
 				
-				//Create a temporary node to traverse through the linked list
-				currentNode = front;
-			 	bool check = false; //flag for isSame
+		//Create a temporary node to traverse through the linked list
+		currentNode = front;
+		bool check = false; //flag for isSame
 
-				//Look for the node where the key matches the node's data until end
-				do {
+		//Look for the node where the key matches the node's data until end
+		do {
 
-					if (isSame(key, currentNode->data)){
-						check = true;
-					}
-					else
-						currentNode = currentNode->next;
-
-				}
-				while(currentNode->next && !check);
-
-				//We find a match
-				if (check){
-			
-					//Detach the previous node and the next node from the currentNode
-					//and attach them to each other
-					currentNode->prev->next = currentNode->next;
-					currentNode->next->prev = currentNode->prev;
-
-					//Insert the Node to the front then delete
-					insert(currentNode->data);
-					
-					return currentNode;
-				}	
-
+			if (isSame(key, currentNode->data)){
+				check = true;
 			}
+			else
+				currentNode = currentNode->next;
+    }
+		while(currentNode && !check);
+
+		//We find a match
+		if (check){
+			
+			//Detach the previous node and the next node from the currentNode
+			//and attach them to each other
+			
+      //Set up the previous and next nodes relative to the currentNode
+      Node<T>* pnode = currentNode->prev;
+      Node<T>* nnode = currentNode->next;
+
+      //Only bother doing if the node found isn't already in front
+      if (currentNode != front){
+
+        //Corner case if the node found is the last node in the list
+        if (!nnode && pnode){
+          pnode->next = nnode;
+        }
+
+        //'Normal' case where the currentNode is between two other nodes
+        if (nnode && pnode){
+          pnode->next = nnode;
+          nnode->prev = pnode;
+        }
+
+        //Insert the Node to the front
+        insert(currentNode->data);
+      }
+      else{
+        //cout << "The node we found was already the front node.\n";
+      }
 
 			return currentNode;
+		}	
 
-		}
+	}
+
+	return currentNode;
+
+}
 		
-		//Copies each node's data into the array starting with the front
-		//If the array is large enough to hold the entire list return true, false otherwise
-		bool copyToArray(T array[], int capacity){
+//Copies each node's data into the array starting with the front
+//If the array is large enough to hold the entire list return true, false otherwise
+template <class T>
+bool RecentList<T>::copyToArray(T array[], int capacity){
 
-			Node<T>* currentNode = front;
-			int count = 0;
+	Node<T>* currentNode = front;
+	int count = 0;
 
-			for (int i = 0; i < capacity && i < listSize ; i++){
-				
-				array[i] = currentNode->data;
-			 	currentNode = currentNode->next;
-				count++;
-			}
-
-			if (count == listSize)
-				return true;
-				
-			return false;
-		}
-
-		//Destructor
-		~RecentList(){
+	for (int i = 0; i < capacity && currentNode; i++){
 			
-			//Delete all the nodes in the list
-			while(front){
-				Node<T>* del = front;
-				front = front->next;
-				delete del;
-			}
+		array[i] = currentNode->data;
+		currentNode = currentNode->next;
+		count++;
+	}
+
+	if (count == listSize)
+		return true;
+				
+	return false;
+}
+
+//Destructor
+template <class T>
+RecentList<T>::~RecentList(){
 			
-			//Reset listSize
-			listSize = 0;
-		}
-};
+  //Traverse through the list and deallocate each node
+	while(front){
+		listSize--;
+    Node<T>* cur = front->next;
+    delete front;
+    front = cur;
+  }
+
+}
