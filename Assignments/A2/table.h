@@ -5,7 +5,7 @@
 	1. Simple Table 2. Hash Table 3. Tree Table
 */
 
-#include "linkedlist.h"
+#include "llist.h"
 #include <cstring>
 #include <functional>
 #include <iostream>
@@ -93,7 +93,9 @@ const SimpleTable<TYPE>& SimpleTable<TYPE>::operator=(const SimpleTable<TYPE>& o
   if (this != &other){
 
     if (sTable != nullptr){
-			delete [] sTable;
+			for (int i = 0; i << count; i++){
+				delete [] sTable[i].key;
+			}
 			sTable = nullptr;
 		}
     max = other.max;
@@ -169,11 +171,14 @@ bool SimpleTable<TYPE>::update(const char* key, const TYPE& value){
 
         for (int i = max; i > shiftpt; i--){
           if (strlen(sTable[i-1].key) > 0){
-						strcpy(sTable[i].key, sTable[i-1].key);
+						//strcpy(sTable[i].key, sTable[i-1].key);
+						sTable[i].key = sTable[i-1].key;
 						sTable[i].value = sTable[i-1].value;
           }
+
         }
-				
+
+				sTable[shiftpt].key = new char[strlen(key)+1];
         strcpy(sTable[shiftpt].key, key);
 				sTable[shiftpt].value = value;
       } 
@@ -213,8 +218,9 @@ bool SimpleTable<TYPE>::remove(const char* key){
       for (int i = flag; i < max; i++){
 
         if (i + 1 != max && strlen(sTable[i+1].key) > 0){
-          strcpy(sTable[i].key, sTable[i+1].key);
-          sTable[i].value = sTable[i+1].value;
+          //strcpy(sTable[i].key, sTable[i+1].key);
+          sTable[i].key = sTable[i+1].key;
+					sTable[i].value = sTable[i+1].value;
         }
       }
 
@@ -248,6 +254,12 @@ bool SimpleTable<TYPE>::find(const char* key, TYPE& value){
 //Returns the current number of entries in the table
 template <class TYPE>
 int SimpleTable<TYPE>::size() const{
+	
+	/*
+	for (int i = 0; i < count; i++)
+		cout << "Key " << sTable[i].key << " Value " << sTable[i].value << endl;
+	*/
+	
   return count;
 }
 
@@ -667,7 +679,6 @@ const TreeTable<TYPE>& TreeTable<TYPE>::operator=(const TreeTable<TYPE>& src){
 		count = src.count;
 		
 		if (root){
-			delete root;
 			root = nullptr;
 		}
 		if (src.root != nullptr){
